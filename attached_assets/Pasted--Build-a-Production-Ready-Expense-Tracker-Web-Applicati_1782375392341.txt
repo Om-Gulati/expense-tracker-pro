@@ -1,0 +1,318 @@
+# Build a Production-Ready Expense Tracker Web Application
+
+Create a modern, full-stack financial management web application called **Expense Tracker Pro**.
+
+## Tech Stack
+
+### Backend
+
+* Python Flask
+* Flask REST APIs
+* SQLAlchemy ORM
+* MySQL database
+* JWT Authentication
+* Flask-Migrate
+* Flask-CORS
+
+### Frontend
+
+* HTML5
+* CSS3
+* JavaScript
+* Bootstrap 5 or Tailwind CSS
+* Chart.js for analytics
+* AJAX/Fetch API
+
+---
+
+# Project Objective
+
+Develop a highly interactive and visually appealing expense tracking platform that users can depend on daily for managing their finances. The application should feel like a premium financial dashboard.
+
+The design should encourage users to continuously log expenses, check reports, and monitor their financial habits.
+
+---
+
+# Authentication System
+
+### Features:
+
+* User Registration
+* Secure Login
+* Password hashing using bcrypt
+* JWT authentication
+* Remember Me option
+* Logout
+* Forgot Password UI
+* Profile management
+
+---
+
+# Dashboard
+
+Create a beautiful dashboard containing:
+
+* Total Balance Card
+* Total Income Card
+* Total Expenses Card
+* Savings Card
+* Monthly Spending Overview
+* Recent Transactions
+* Financial Health Score
+* Quick Add Expense button
+* Quick Add Income button
+
+Use animated cards and smooth transitions.
+
+---
+
+# Income Management
+
+Users can:
+
+* Add income entries
+* Edit income
+* Delete income
+* Categorize income
+* Add income source
+* Add notes
+* Filter by date
+
+Income categories:
+
+* Salary
+* Freelancing
+* Business
+* Investments
+* Gifts
+* Other
+
+---
+
+# Expense Management
+
+Users can:
+
+* Add expenses
+* Edit expenses
+* Delete expenses
+* Search expenses
+* Filter by category
+* Filter by date
+* Add notes
+
+Expense categories:
+
+* Food
+* Transport
+* Shopping
+* Bills
+* Entertainment
+* Health
+* Education
+* Travel
+* Miscellaneous
+
+---
+
+# Analytics Section
+
+Create interactive charts using Chart.js.
+
+Include:
+
+* Monthly expenses chart
+* Income vs expense chart
+* Category-wise pie chart
+* Savings trend chart
+* Spending habits analysis
+
+Charts should animate smoothly.
+
+---
+
+# Monthly Reports
+
+Generate detailed reports including:
+
+* Total income
+* Total expenses
+* Savings
+* Highest expense category
+* Monthly comparisons
+* Financial insights
+
+Users can select:
+
+* Current month
+* Previous months
+* Custom date range
+
+---
+
+# CSV Export
+
+Allow users to export:
+
+* Expenses
+* Income records
+* Monthly reports
+
+Export options:
+
+* CSV
+* Excel format
+
+---
+
+# User Experience Requirements
+
+* Responsive design for desktop, tablet, and mobile.
+* Dark mode and light mode.
+* Smooth animations.
+* Loading indicators.
+* Toast notifications.
+* Confirmation dialogs.
+* Empty-state illustrations.
+* Modern financial dashboard appearance.
+
+---
+
+# UI Design Requirements
+
+Design inspiration:
+
+* Modern fintech applications.
+* Clean glassmorphism cards.
+* Soft shadows.
+* Rounded corners.
+* Gradient backgrounds.
+* Minimal and professional color palette.
+
+Suggested colors:
+
+* Dark navy
+* Emerald green
+* White
+* Soft gray
+* Accent blue
+
+---
+
+# Additional Features
+
+* Financial goals tracker
+* Budget limits
+* Expense warnings
+* Overspending alerts
+* Daily spending streaks
+* Achievement badges
+* Personalized financial tips
+* Search functionality
+* Pagination
+* Sorting options
+
+---
+
+# Database Tables
+
+Users:
+
+* id
+* name
+* email
+* password
+* created_at
+
+Income:
+
+* id
+* user_id
+* amount
+* category
+* source
+* note
+* date
+
+Expenses:
+
+* id
+* user_id
+* amount
+* category
+* note
+* date
+
+Budgets:
+
+* id
+* user_id
+* category
+* limit_amount
+
+---
+
+# REST API Endpoints
+
+Authentication:
+
+* POST /register
+* POST /login
+* POST /logout
+
+Income:
+
+* GET /income
+* POST /income
+* PUT /income/<id>
+* DELETE /income/<id>
+
+Expenses:
+
+* GET /expenses
+* POST /expenses
+* PUT /expenses/<id>
+* DELETE /expenses/<id>
+
+Reports:
+
+* GET /reports/monthly
+* GET /reports/analytics
+
+Export:
+
+* GET /export/csv
+
+---
+
+# Code Requirements
+
+* Modular Flask structure
+* Blueprints
+* Proper folder organization
+* Error handling
+* Validation
+* Comments where necessary
+* Environment variables
+* Requirements.txt
+* Database migrations
+* Clean and maintainable code
+
+---
+
+# Final Deliverables
+
+Generate:
+
+* Complete backend
+* Complete frontend
+* Database models
+* REST APIs
+* Dashboard
+* Authentication system
+* Charts and analytics
+* CSV export functionality
+* Responsive design
+* README file with setup instructions
+
+The application should look like a premium financial SaaS product and be suitable for deployment and presentation to clients.
