@@ -103,10 +103,10 @@ export default function DashboardPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Balance" value={format(stats?.totalBalance ?? 0)} icon={DollarSign} subtitle="All time net" color="primary" />
-        <StatCard title="Monthly Income" value={format(stats?.monthlyIncome ?? 0)} icon={TrendingUp} subtitle="This month" color="green" />
-        <StatCard title="Monthly Expenses" value={format(stats?.monthlyExpenses ?? 0)} icon={TrendingDown} subtitle="This month" color="red" />
-        <StatCard title="Monthly Savings" value={format(stats?.monthlySavings ?? 0)} icon={PiggyBank} subtitle="Income minus expenses" color={(stats?.monthlySavings ?? 0) >= 0 ? "blue" : "red"} />
+        <StatCard title="Total Balance" amount={stats?.totalBalance ?? 0} icon={DollarSign} subtitle="All time net" color="primary" />
+        <StatCard title="Monthly Income" amount={stats?.monthlyIncome ?? 0} icon={TrendingUp} subtitle="This month" color="green" />
+        <StatCard title="Monthly Expenses" amount={stats?.monthlyExpenses ?? 0} icon={TrendingDown} subtitle="This month" color="red" />
+        <StatCard title="Monthly Savings" amount={stats?.monthlySavings ?? 0} icon={PiggyBank} subtitle="Income minus expenses" color={(stats?.monthlySavings ?? 0) >= 0 ? "blue" : "red"} />
       </div>
 
       {/* Health + budget alerts */}
@@ -269,26 +269,73 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, subtitle, color }: {
-  title: string; value: string; icon: React.ComponentType<{ className?: string }>;
+function adaptiveFormat(amount: number, currency: import("@/hooks/use-currency").CurrencyOption, rate: number): { display: string; exact: string } {
+  const converted = amount * rate;
+  const abs = Math.abs(converted);
+  const sign = converted < 0 ? "-" : "";
+  const sym = currency.symbol;
+  const noDecimals = currency.code === "JPY" || currency.code === "KRW" || currency.code === "BDT";
+
+  const fmt = (n: number, decimals: number) =>
+    noDecimals ? `${sign}${sym}${Math.round(n).toLocaleString()}` : `${sign}${sym}${n.toFixed(decimals)}`;
+
+  const exact = (() => {
+    try {
+      return new Intl.NumberFormat(currency.locale, {
+        style: "currency", currency: currency.code,
+        minimumFractionDigits: noDecimals ? 0 : 2,
+        maximumFractionDigits: noDecimals ? 0 : 2,
+      }).format(converted);
+    } catch { return fmt(abs, 2); }
+  })();
+
+  let display: string;
+  if (abs >= 1_000_000_000)      display = `${sign}${sym}${(abs / 1_000_000_000).toFixed(1)}B`;
+  else if (abs >= 100_000_000)   display = `${sign}${sym}${(abs / 1_000_000).toFixed(1)}M`;
+  else if (abs >= 10_000_000)    display = `${sign}${sym}${(abs / 1_000_000).toFixed(2)}M`;
+  else if (abs >= 1_000_000)     display = `${sign}${sym}${(abs / 1_000_000).toFixed(3)}M`;
+  else if (abs >= 100_000)       display = `${sign}${sym}${(abs / 1_000).toFixed(1)}K`;
+  else if (abs >= 10_000)        display = `${sign}${sym}${(abs / 1_000).toFixed(2)}K`;
+  else if (abs >= 1_000)         display = `${sign}${sym}${(abs / 1_000).toFixed(3)}K`;
+  else                           display = exact;
+
+  return { display, exact };
+}
+
+function StatCard({ title, amount, icon: Icon, subtitle, color }: {
+  title: string; amount: number; icon: React.ComponentType<{ className?: string }>;
   subtitle: string; color: string;
 }) {
+  const { currency, rate } = useCurrency();
+  const { display, exact } = adaptiveFormat(amount, currency, rate);
+
   const colorMap: Record<string, string> = {
     primary: "text-primary bg-primary/10",
     green: "text-emerald-500 bg-emerald-500/10",
     red: "text-destructive bg-destructive/10",
     blue: "text-blue-500 bg-blue-500/10",
   };
+
+  const textSize =
+    display.length <= 7  ? "text-2xl" :
+    display.length <= 10 ? "text-xl"  :
+    display.length <= 13 ? "text-lg"  : "text-base";
+
   return (
     <Card>
       <CardContent className="pt-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-          <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", colorMap[color] ?? colorMap.primary)}>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">{title}</p>
+          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", colorMap[color] ?? colorMap.primary)}>
             <Icon className="h-4 w-4" />
           </div>
         </div>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p
+          className={cn("font-bold text-foreground transition-all duration-200 truncate", textSize)}
+          title={exact}
+        >
+          {display}
+        </p>
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
       </CardContent>
     </Card>
