@@ -7,6 +7,11 @@ import { CreateBudgetBody, UpdateBudgetBody, UpdateBudgetParams, DeleteBudgetPar
 const router = Router();
 router.use(requireAuth);
 
+function lastDayOfMonth(year: number, month: number): string {
+  const day = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 router.get("/budgets", async (req, res) => {
   const userId = req.user!.userId;
   const now = new Date();
@@ -17,10 +22,10 @@ router.get("/budgets", async (req, res) => {
     and(eq(budgetsTable.userId, userId), eq(budgetsTable.month, currentMonth), eq(budgetsTable.year, currentYear))
   );
 
-  const result = await Promise.all(budgets.map(async (b) => {
-    const startDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
-    const endDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-31`;
+  const startDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
+  const endDate = lastDayOfMonth(currentYear, currentMonth);
 
+  const result = await Promise.all(budgets.map(async (b) => {
     const [spentResult] = await db
       .select({ total: sum(expensesTable.amount) })
       .from(expensesTable)

@@ -12,18 +12,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { useCurrency } from "@/hooks/use-currency";
 
 const CATEGORIES = ["All", "Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Education", "Travel", "Miscellaneous"];
-
-function formatCurrency(v: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
-}
 
 type Expense = { id: number; amount: number; category: string; note: string | null; date: string; createdAt: string; userId: number };
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
+  const { format } = useCurrency();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [startDate, setStartDate] = useState("");
@@ -44,24 +41,9 @@ export default function ExpensesPage() {
 
   const { data, isLoading } = useGetExpenses(params);
 
-  const createMutation = useCreateExpense({
-    mutation: {
-      onSuccess: () => { toast.success("Expense added"); invalidate(); closeModal(); },
-      onError: () => toast.error("Failed to add expense"),
-    }
-  });
-  const updateMutation = useUpdateExpense({
-    mutation: {
-      onSuccess: () => { toast.success("Expense updated"); invalidate(); closeModal(); },
-      onError: () => toast.error("Failed to update expense"),
-    }
-  });
-  const deleteMutation = useDeleteExpense({
-    mutation: {
-      onSuccess: () => { toast.success("Expense deleted"); invalidate(); setDeleteId(null); },
-      onError: () => toast.error("Failed to delete expense"),
-    }
-  });
+  const createMutation = useCreateExpense({ mutation: { onSuccess: () => { toast.success("Expense added"); invalidate(); closeModal(); }, onError: () => toast.error("Failed to add expense") } });
+  const updateMutation = useUpdateExpense({ mutation: { onSuccess: () => { toast.success("Expense updated"); invalidate(); closeModal(); }, onError: () => toast.error("Failed to update expense") } });
+  const deleteMutation = useDeleteExpense({ mutation: { onSuccess: () => { toast.success("Expense deleted"); invalidate(); setDeleteId(null); }, onError: () => toast.error("Failed to delete expense") } });
 
   function invalidate() { queryClient.invalidateQueries({ queryKey: getGetExpensesQueryKey() }); }
   function closeModal() { setShowModal(false); setEditItem(null); setForm({ amount: "", category: "", note: "", date: new Date().toISOString().split("T")[0] }); }
@@ -69,7 +51,8 @@ export default function ExpensesPage() {
 
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
-    const payload = { amount: parseFloat(form.amount), category: form.category, note: form.note, date: form.date };
+    if (!form.category) { toast.error("Please select a category"); return; }
+    const payload = { amount: parseFloat(form.amount), category: form.category, note: form.note || undefined, date: form.date };
     if (editItem) updateMutation.mutate({ id: editItem.id, data: payload });
     else createMutation.mutate({ data: payload });
   };
@@ -83,7 +66,7 @@ export default function ExpensesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "expenses.csv"; a.click();
     URL.revokeObjectURL(url);
-    toast.success("Expenses exported");
+    toast.success("Exported successfully");
   };
 
   return (
@@ -99,7 +82,6 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-wrap gap-3">
@@ -108,16 +90,18 @@ export default function ExpensesPage() {
               <Input placeholder="Search notes..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
             </div>
             <Select value={category} onValueChange={v => { setCategory(v); setPage(1); }}>
-              <SelectTrigger className="w-40"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-44"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
               <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
-            <Input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="w-36" placeholder="From" />
-            <Input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} className="w-36" placeholder="To" />
+            <Input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="w-36" />
+            <Input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} className="w-36" />
+            {(search || category !== "All" || startDate || endDate) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory("All"); setStartDate(""); setEndDate(""); setPage(1); }}>Clear</Button>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">
@@ -128,12 +112,13 @@ export default function ExpensesPage() {
           {isLoading ? (
             <div className="p-4 space-y-3">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
           ) : !data?.data?.length ? (
-            <div className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">No expenses found. Add your first one!</p>
+            <div className="p-10 text-center">
+              <p className="text-sm text-muted-foreground">No expenses found.</p>
+              <Button size="sm" className="mt-3" onClick={() => setShowModal(true)}><Plus className="h-4 w-4 mr-1.5" />Add your first expense</Button>
             </div>
           ) : (
             <div>
-              <div className="hidden sm:grid grid-cols-5 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border">
+              <div className="hidden sm:grid grid-cols-5 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border bg-muted/30">
                 <span>Date</span><span>Category</span><span>Note</span><span className="text-right">Amount</span><span className="text-right">Actions</span>
               </div>
               {data.data.map((e) => (
@@ -141,7 +126,7 @@ export default function ExpensesPage() {
                   <span className="text-sm text-muted-foreground">{e.date}</span>
                   <Badge variant="secondary" className="w-fit text-xs">{e.category}</Badge>
                   <span className="text-sm text-foreground truncate">{e.note ?? "—"}</span>
-                  <span className="text-sm font-semibold text-destructive sm:text-right">{formatCurrency(e.amount)}</span>
+                  <span className="text-sm font-semibold text-destructive sm:text-right">{format(e.amount)}</span>
                   <div className="flex gap-1 sm:justify-end">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e as Expense)}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -160,14 +145,13 @@ export default function ExpensesPage() {
         )}
       </Card>
 
-      {/* Add/Edit Modal */}
       <Dialog open={showModal} onOpenChange={(o) => { if (!o) closeModal(); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editItem ? "Edit Expense" : "Add Expense"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Amount</Label>
-              <Input type="number" step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
+              <Input type="number" step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required autoFocus />
             </div>
             <div className="space-y-1.5">
               <Label>Category</Label>
@@ -194,13 +178,9 @@ export default function ExpensesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm */}
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete expense?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Delete expense?</AlertDialogTitle><AlertDialogDescription>This cannot be undone.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => deleteId !== null && deleteMutation.mutate({ id: deleteId })} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>

@@ -6,6 +6,11 @@ import { requireAuth } from "../middlewares/auth";
 const router = Router();
 router.use(requireAuth);
 
+function lastDayOfMonth(year: number, month: number): string {
+  const day = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 router.get("/analytics/monthly", async (req, res) => {
   const userId = req.user!.userId;
   const months = parseInt(req.query.months as string) || 6;
@@ -13,11 +18,12 @@ router.get("/analytics/monthly", async (req, res) => {
   const result = [];
   for (let i = months - 1; i >= 0; i--) {
     const d = new Date();
+    d.setDate(1);
     d.setMonth(d.getMonth() - i);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+    const endDate = lastDayOfMonth(year, month);
 
     const [incomeResult, expensesResult] = await Promise.all([
       db.select({ total: sum(incomeTable.amount) }).from(incomeTable).where(and(
@@ -123,13 +129,13 @@ router.get("/reports/monthly", async (req, res) => {
   const year = parseInt(req.query.year as string) || now.getFullYear();
   const month = parseInt(req.query.month as string) || (now.getMonth() + 1);
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+  const endDate = lastDayOfMonth(year, month);
 
   const prevD = new Date(year, month - 2, 1);
   const prevYear = prevD.getFullYear();
   const prevMonth = prevD.getMonth() + 1;
   const prevStart = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
-  const prevEnd = `${prevYear}-${String(prevMonth).padStart(2, "0")}-31`;
+  const prevEnd = lastDayOfMonth(prevYear, prevMonth);
 
   const [incomeResult, expensesResult, prevIncomeResult, prevExpensesResult, categoryRows] = await Promise.all([
     db.select({ total: sum(incomeTable.amount) }).from(incomeTable).where(and(eq(incomeTable.userId, userId), sql`${incomeTable.date} >= ${startDate}`, sql`${incomeTable.date} <= ${endDate}`)),
@@ -149,10 +155,12 @@ router.get("/reports/monthly", async (req, res) => {
   const totalCatAmount = categoryRows.reduce((a, r) => a + parseFloat(r.amount ?? "0"), 0);
 
   const insights: string[] = [];
-  if (savings > 0) insights.push(`You saved $${savings.toFixed(2)} this month.`);
-  if (savingsRate >= 20) insights.push("Great savings rate! You're on track.");
-  if (totalExpenses > prevExpenses) insights.push(`Spending up ${Math.round(((totalExpenses - prevExpenses) / Math.max(prevExpenses, 1)) * 100)}% vs last month.`);
-  if (categoryRows[0]) insights.push(`Biggest spend: ${categoryRows[0].category} at $${parseFloat(categoryRows[0].amount ?? "0").toFixed(2)}.`);
+  if (savings > 0) insights.push(`You saved ${savings.toFixed(2)} this month.`);
+  if (savingsRate >= 20) insights.push("Great savings rate — you're on track to meet your goals.");
+  if (totalExpenses > prevExpenses && prevExpenses > 0) insights.push(`Spending rose ${Math.round(((totalExpenses - prevExpenses) / prevExpenses) * 100)}% vs last month.`);
+  if (totalExpenses < prevExpenses && prevExpenses > 0) insights.push(`Spending dropped ${Math.round(((prevExpenses - totalExpenses) / prevExpenses) * 100)}% vs last month — great discipline!`);
+  if (categoryRows[0]) insights.push(`Biggest spend category: ${categoryRows[0].category} at ${parseFloat(categoryRows[0].amount ?? "0").toFixed(2)}.`);
+  if (savings <= 0 && totalIncome > 0) insights.push("Expenses exceeded income this month. Consider reviewing your budget limits.");
 
   res.json({
     year, month, totalIncome, totalExpenses, savings, savingsRate,

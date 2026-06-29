@@ -1,0 +1,1 @@
+- [End-of-month date bug](end-of-month-date-bug.md) — hardcoded "-31" day in date strings causes PostgreSQL to reject queries for months with fewer than 31 days.

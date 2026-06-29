@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { CurrencyProvider } from "@/hooks/use-currency";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/Layout";
 import LoginPage from "@/pages/login";
@@ -64,12 +65,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AuthProvider>
-            <Router />
-          </AuthProvider>
-        </WouterRouter>
-        <Toaster richColors position="top-right" />
+        <CurrencyProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AuthProvider>
+              <Router />
+            </AuthProvider>
+          </WouterRouter>
+          <Toaster richColors position="top-right" duration={1800} />
+        </CurrencyProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
