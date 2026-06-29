@@ -56,7 +56,8 @@ export default function SettingsPage() {
     if (!resp.ok) { toast.error("Export failed"); return; }
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `all-transactions-${new Date().toISOString().split("T")[0]}.csv`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `all-transactions-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("All data exported");
   };
@@ -67,7 +68,8 @@ export default function SettingsPage() {
     if (!resp.ok) { toast.error("Export failed"); return; }
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `expenses-${new Date().toISOString().split("T")[0]}.csv`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `expenses-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Expenses exported");
   };
@@ -78,7 +80,8 @@ export default function SettingsPage() {
     if (!resp.ok) { toast.error("Export failed"); return; }
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `income-${new Date().toISOString().split("T")[0]}.csv`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `income-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Income exported");
   };

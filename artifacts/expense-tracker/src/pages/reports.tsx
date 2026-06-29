@@ -27,7 +27,8 @@ export default function ReportsPage() {
     const resp = await fetch(`/api/export/csv?${q}`, { headers: { Authorization: `Bearer ${token}` } });
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `report-${year}-${month}.csv`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `report-${year}-${month}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 

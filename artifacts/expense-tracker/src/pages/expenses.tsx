@@ -64,7 +64,8 @@ export default function ExpensesPage() {
     if (!resp.ok) { toast.error("Export failed"); return; }
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "expenses.csv"; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = "expenses.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Exported successfully");
   };
