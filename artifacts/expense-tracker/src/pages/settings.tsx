@@ -3,7 +3,7 @@ import { useGetMe, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-r
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { User, Moon, Sun, Monitor, Save, DollarSign, Download, LogOut, Globe, Bell, Shield } from "lucide-react";
+import { User, Moon, Sun, Monitor, Save, DollarSign, Download, LogOut, Globe, Bell, Shield, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useCurrency, CURRENCIES } from "@/hooks/use-currency";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 
 const THEMES = [
@@ -25,7 +26,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const { theme, setTheme } = useTheme();
-  const { currency, setCurrency, format } = useCurrency();
+  const { currency, setCurrency, format, rate, ratesUpdatedAt, ratesLoading, ratesError, refetchRates } = useCurrency();
   const { logout } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -128,12 +129,27 @@ export default function SettingsPage() {
       {/* Currency */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" />Currency</CardTitle>
-          <CardDescription>Choose the currency used across the app. Currently: {format(1234.56)}</CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" />Currency &amp; Exchange Rate</CardTitle>
+              <CardDescription className="mt-1">Live rates sourced from open.er-api.com · base: USD</CardDescription>
+            </div>
+            <Button
+              variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+              onClick={() => { refetchRates(); toast.info("Refreshing rates…"); }}
+              disabled={ratesLoading}
+              title="Refresh exchange rates"
+            >
+              <RefreshCw className={cn("h-4 w-4", ratesLoading && "animate-spin")} />
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Select value={currency.code} onValueChange={code => { const c = CURRENCIES.find(x => x.code === code); if (c) { setCurrency(c); toast.success(`Currency changed to ${c.label}`); } }}>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={currency.code} onValueChange={code => {
+              const c = CURRENCIES.find(x => x.code === code);
+              if (c) { setCurrency(c); toast.success(`Currency changed to ${c.label}`); }
+            }}>
               <SelectTrigger className="w-72">
                 <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue />
@@ -141,12 +157,53 @@ export default function SettingsPage() {
               <SelectContent>
                 {CURRENCIES.map(c => (
                   <SelectItem key={c.code} value={c.code}>
-                    <span className="font-mono text-muted-foreground mr-2">{c.symbol}</span>
+                    <span className="font-mono text-muted-foreground mr-2 w-6 inline-block">{c.symbol}</span>
                     {c.label} ({c.code})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {ratesLoading && <span className="text-xs text-muted-foreground">Fetching live rates…</span>}
+          </div>
+
+          {/* Rate info panel */}
+          <div className={cn(
+            "rounded-lg border px-4 py-3 text-sm space-y-2",
+            ratesError ? "border-destructive/30 bg-destructive/5" : "border-border bg-muted/30"
+          )}>
+            {ratesError ? (
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="text-sm">Could not fetch live rates — displaying stored or 1:1 fallback rates.</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-foreground">Live rate active</span>
+                    <Badge variant="secondary" className="text-xs">real-time</Badge>
+                  </div>
+                  {ratesUpdatedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      Updated {ratesUpdatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </div>
+
+                {currency.code !== "USD" && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                    <RateItem label="1 USD =" value={`${rate.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${currency.code}`} />
+                    <RateItem label={`1 ${currency.code} =`} value={`${(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 6 })} USD`} />
+                    <RateItem label="Example: $1,000 USD" value={format(1000)} highlight />
+                  </div>
+                )}
+
+                {currency.code === "USD" && (
+                  <p className="text-xs text-muted-foreground">Currently using USD (base currency). Select another currency above to see the live conversion rate.</p>
+                )}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -245,6 +302,15 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function RateItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-semibold", highlight ? "text-primary" : "text-foreground")}>{value}</span>
     </div>
   );
 }
