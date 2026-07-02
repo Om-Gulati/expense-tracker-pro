@@ -2,8 +2,9 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+
 import { CurrencyProvider } from "@/hooks/use-currency";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/Layout";
@@ -18,6 +19,7 @@ import AnalyticsPage from "@/pages/analytics";
 import ReportsPage from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
 
+setBaseUrl(import.meta.env.VITE_API_URL ?? "");
 setAuthTokenGetter(() => localStorage.getItem("auth_token"));
 
 const queryClient = new QueryClient({
