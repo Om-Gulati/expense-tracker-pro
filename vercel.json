@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install -g pnpm@latest && pnpm install --frozen-lockfile",
+  "installCommand": "npm install -g pnpm@9 && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm run typecheck:libs && BASE_PATH=/ pnpm --filter @workspace/expense-tracker run build",
   "outputDirectory": "artifacts/expense-tracker/dist/public",
   "framework": null,
